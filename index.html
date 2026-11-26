@@ -14,23 +14,31 @@
 [hidden]{display:none!important}
 html,body{height:100%;margin:0;background:#020b12;color:#eaf8ff;overflow:hidden;font:300 1rem/1.35 Sora,system-ui,-apple-system,"Segoe UI",sans-serif}
 #sea{position:fixed;inset:0;width:100%;height:100%;display:block}
-main{position:relative;z-index:1;height:100dvh;max-width:1100px;margin:0 auto;display:flex;flex-direction:column;padding:calc(18px + env(safe-area-inset-top,0px)) 22px calc(22px + env(safe-area-inset-bottom,0px))}
+main{position:relative;z-index:1;height:100dvh;max-width:1100px;margin:0 auto;display:flex;flex-direction:column;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 22px calc(20px + env(safe-area-inset-bottom,0px));text-shadow:0 1px 14px rgba(0,20,30,.45)}
 header{display:flex;justify-content:space-between;align-items:flex-start}
 #title{margin:0;padding:8px 24px 8px 0;font-weight:600;font-size:1.05rem}
-#sys{margin:0;opacity:.75;font-size:.92rem;min-height:1.4em}
-.live{display:flex;align-items:center;gap:8px;padding-top:10px;font-size:.88rem;opacity:.85}
+#sys{margin:0;opacity:.8;font-size:.92rem;min-height:1.4em}
+.live{display:flex;align-items:center;gap:8px;padding:12px 0 10px 18px;font-size:.88rem;opacity:.85}
 .live i{width:8px;height:8px;border-radius:50%;background:#6ff5c4;animation:pulse 2.4s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(111,245,196,.6)}70%,100%{box-shadow:0 0 0 10px rgba(111,245,196,0)}}
-#water{flex:1;display:flex;align-items:flex-end;min-height:140px;padding:20px 0 26px}
+/* filter-change warning: its own strip at the top */
+#warn{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;background:#ffc94a;color:#2b1d00;border-radius:16px;padding:12px 20px;margin:4px 0 0;font-weight:600;text-shadow:none;animation:rise .6s ease-out}
+#warn b{font-weight:600;font-size:1.1rem}
+@keyframes rise{from{opacity:0;transform:translateY(-10px)}}
+#water{flex:1;display:flex;align-items:flex-end;min-height:120px;padding:18px 0 22px}
 #verdict{margin:0;font-weight:300;font-size:clamp(3rem,15vw,8.5rem);line-height:.95;letter-spacing:-.03em;text-shadow:0 2px 40px rgba(0,20,30,.4)}
-.read{display:flex;gap:10px 34px;flex-wrap:wrap;padding-bottom:18px}
-.read span{display:block;opacity:.7;font-size:.92rem}
-.read b{display:block;font-weight:300;font-size:clamp(1.8rem,7.5vw,3rem);letter-spacing:-.02em;line-height:1.15;font-variant-numeric:tabular-nums}
-#flowBox{padding:6px 0}
-#warn{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;background:#ffc94a;color:#2b1d00;border-radius:24px;padding:12px 22px;margin-bottom:12px;font-weight:600;animation:rise .6s ease-out}
-#warn b{font-weight:600;font-size:1.15rem}
-@keyframes rise{from{opacity:0;transform:translateY(14px)}}
-#call{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px 14px;background:#eefaff;color:#06283a;border-radius:999px;padding:16px 26px;text-decoration:none;font-weight:600}
+/* maintenance life tracker */
+.maint{display:grid;gap:4px 34px;padding-bottom:12px}
+@media (min-width:760px){.maint{grid-template-columns:1fr 1fr}}
+.lh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.95rem}
+.lh b{font-weight:600;font-variant-numeric:tabular-nums}
+.meter{position:relative;height:6px;border-radius:3px;background:rgba(234,248,255,.22);margin-top:8px}
+.meter i{display:block;height:100%;width:0;border-radius:3px;background:#8fe3f5}
+.meter u{position:absolute;left:80%;top:-4px;bottom:-4px;width:2px;background:rgba(234,248,255,.65)}
+.life.due .meter i{background:#ffc94a}
+.life{padding:8px 0}
+.rem{display:inline-block;margin-top:8px;background:#ffc94a;color:#2b1d00;border-radius:999px;padding:5px 14px;font-weight:600;font-size:.9rem;text-decoration:none;text-shadow:none}
+#call{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px 14px;background:#eefaff;color:#06283a;border-radius:999px;padding:16px 26px;text-decoration:none;font-weight:600;text-shadow:none}
 #call span{font-weight:300;font-variant-numeric:tabular-nums}
 :focus-visible{outline:3px solid #ffc94a;outline-offset:3px}
 .hold{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
@@ -41,39 +49,51 @@ header{display:flex;justify-content:space-between;align-items:flex-start}
 <canvas id="sea" aria-hidden="true"></canvas>
 <main>
   <header>
-    <div><h1 id="title">Filter station</h1><p id="sys">Connecting…</p></div>
-    <span class="live"><i></i>Live</span>
+    <div><h1 id="title">Filter station</h1><p id="sys"></p></div>
+    <span class="live" id="live"><i></i>Live</span>
   </header>
+  <div id="warn" role="alert" hidden><b>Change filters</b></div>
   <section id="water" role="status" aria-label="Turbidity"><p id="verdict"></p></section>
-  <section class="read">
-    <div id="flowBox"><span>Flow rate</span><b id="flow">—</b></div>
-    <div><span>Running time</span><b id="time">00:00:00</b></div>
+  <section class="maint" id="maint" aria-label="Maintenance">
+    <div class="life" id="life-tank"><div class="lh"><span>Sedimentation tank</span><b><span id="h-tank">0</span> / 200 h</b></div><div class="meter"><i id="bar-tank"></i><u></u></div><a class="rem" id="rem-tank" href="tel:+919810203440" hidden></a></div>
+    <div class="life" id="life-mem"><div class="lh"><span>Ultrafiltration membrane</span><b><span id="h-mem">0</span> / 760 h</b></div><div class="meter"><i id="bar-mem"></i><u></u></div><a class="rem" id="rem-mem" href="tel:+919810203440" hidden></a></div>
   </section>
-  <div id="warn" role="alert" hidden><b>Change the filter</b><span id="warnSub"></span></div>
   <a id="call" href="tel:+919810203440"><b>Call service</b><span>+91 98102 03440</span></a>
 </main>
 
 <script>
 (function(){
 "use strict";
-var TOPIC="fs-showcase-7k3x9qmv2zt4", RELAY="https://ntfy.sh", START=30;
+var TOPIC="fs-showcase-v2-m4x8q2kz7p5w", RELAY="https://ntfy.sh";
+/* Demo time scale: the full life of each part is shown in minutes (6000x faster than real hours). */
+var LIFE={tank:{hours:200,demoS:120},mem:{hours:760,demoS:456}}, REMIND_AT=80;
 var $=function(i){return document.getElementById(i)};
 var clamp=function(v,a,b){return Math.min(b==null?1:b,Math.max(a==null?0:a,v))};
 var lerp=function(a,b,t){return a+(b-a)*t}, ease=function(t){return t*t*(3-2*t)};
 var reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
-var isLaptop=matchMedia("(hover:hover) and (pointer:fine)").matches;
 
 /* ---------- shared state, rebuilt from a small event log ---------- */
-var S=null, seen={}, bc=null;
-function fresh(t,seed){return {t0:t,seed:seed,turb:{v:"clean",t0:t,from:0},wear:{v:"ok",t0:t,from:92},hide:{v:false,t0:t}}}
+function fresh(t){return {t0:t,on:false,onSince:0,runMs:0,pt:t,st:t,base:{tank:0,mem:0},
+  turb:{v:"unclean",t0:t,from:1},wear:{v:"ok",t0:t,from:92},hide:{v:false,t0:t}}}
+var S=fresh(0), seen={}, bc=null;       // the app starts instantly, switched off, showing the default
 function lvl(t){var a=S.turb,g=a.v==="unclean"?1:0;return lerp(a.from,g,ease(clamp((t-a.t0)/3000)))}   // 0 clear .. 1 murky
 function eff(t){var a=S.wear,g=a.v==="low"?74:92;return lerp(a.from,g,ease(clamp((t-a.t0)/4000)))}     // filter efficiency %
-function flowAt(s){return .18+.0125*Math.sin(s*.37+S.seed*6.283)+.0075*Math.sin(s*.91+S.seed*17.1)}   // always inside 0.16 to 0.20
+function used(t){return S.runMs+(S.on?Math.max(0,t-S.onSince):0)}                                      // powered-on time, from timestamps
+function life(k,t){var f=Math.max(0,used(t)-S.base[k])/1000/LIFE[k].demoS;return {h:LIFE[k].hours*f,pct:f*100}}
 function reduce(ev){
   var t=ev.t;
-  if(ev.k==="reset"){if(S&&t<S.t0)return;S=fresh(t,+ev.seed||0);return}
-  if(!S||t<S.t0)return;
-  if(ev.k==="turb"&&t>=S.turb.t0)S.turb={v:ev.v==="unclean"?"unclean":"clean",t0:t,from:lvl(t)};
+  if(ev.k==="reset"){if(t<S.t0)return;S=fresh(t);return}
+  if(t<S.t0)return;
+  if(ev.k==="power"){
+    if(t<S.pt)return;S.pt=t;
+    if(ev.v&&!S.on){S.on=true;S.onSince=t}
+    else if(!ev.v&&S.on){S.runMs+=Math.max(0,t-S.onSince);S.on=false;      // off: back to the defaults, meters keep their hours
+      S.turb={v:"unclean",t0:t,from:lvl(t)};S.wear={v:"ok",t0:t,from:eff(t)};S.hide={v:false,t0:t}}
+  }else if(ev.k==="svc"){
+    if(t<S.st)return;S.st=t;var u=used(t);
+    if(ev.v==="tank"||ev.v==="both")S.base.tank=u;
+    if(ev.v==="mem"||ev.v==="both")S.base.mem=u;
+  }else if(ev.k==="turb"&&t>=S.turb.t0)S.turb={v:ev.v==="unclean"?"unclean":"clean",t0:t,from:lvl(t)};
   else if(ev.k==="wear"&&t>=S.wear.t0)S.wear={v:ev.v==="low"?"low":"ok",t0:t,from:eff(t)};
   else if(ev.k==="hide"&&t>=S.hide.t0)S.hide={v:!!ev.v,t0:t};
 }
@@ -86,31 +106,38 @@ function act(ev){
   try{fetch(RELAY+"/"+TOPIC,{method:"POST",body:JSON.stringify(ev)}).catch(function(){})}catch(e){}
   if(bc)bc.postMessage(ev);
 }
-try{bc=new BroadcastChannel("fs-showcase");bc.onmessage=function(m){deliver(m.data)}}catch(e){}
-function connect(){
+try{bc=new BroadcastChannel("fs-showcase-v2");bc.onmessage=function(m){deliver(m.data)}}catch(e){}
+(function connect(){
   var es;try{es=new EventSource(RELAY+"/"+TOPIC+"/sse?since=all")}catch(e){return}
   es.onmessage=function(m){try{var j=JSON.parse(m.data);if(j.event==="message")deliver(JSON.parse(j.message))}catch(e){}};
-}
+})();
 
-/* ---------- hidden controls: keys on a laptop, 1-second holds on a phone ---------- */
+/* ---------- hidden controls: function keys on a laptop, holds on a phone ---------- */
 var A={
-  turb:function(){S&&act({k:"turb",v:S.turb.v==="clean"?"unclean":"clean"})},
-  wear:function(){S&&act({k:"wear",v:S.wear.v==="ok"?"low":"ok"})},
-  hide:function(){S&&act({k:"hide",v:!S.hide.v})},
-  reset:function(){act({k:"reset",seed:Math.random()})}
+  power:function(){act({k:"power",v:!S.on})},
+  turb:function(){act({k:"turb",v:S.turb.v==="clean"?"unclean":"clean"})},
+  wear:function(){act({k:"wear",v:S.wear.v==="ok"?"low":"ok"})},
+  hide:function(){act({k:"hide",v:!S.hide.v})},
+  reset:function(){act({k:"reset"})},
+  svcT:function(){act({k:"svc",v:"tank"})},
+  svcM:function(){act({k:"svc",v:"mem"})}
 };
 addEventListener("keydown",function(e){
   if(e.metaKey||e.ctrlKey||e.altKey)return;
-  var k=e.key.toLowerCase();
-  if(k==="t")A.turb();else if(k==="f")A.wear();else if(k==="h")A.hide();else if(k==="r"&&e.shiftKey)A.reset();
-});
-function hold(el,fn){
+  var a=null;
+  if(e.key==="F2")a=e.shiftKey?"reset":"power";
+  else if(e.key==="F4")a=e.shiftKey?"svcT":"turb";
+  else if(e.key==="F8")a="wear";
+  else if(e.key==="F9")a=e.shiftKey?"svcM":"hide";
+  if(a){e.preventDefault();A[a]()}
+},true);
+function hold(el,fn,ms){
   var t;el.classList.add("hold");
-  el.addEventListener("pointerdown",function(){clearTimeout(t);t=setTimeout(function(){fn();if(navigator.vibrate)navigator.vibrate(30)},1000)});
+  el.addEventListener("pointerdown",function(){clearTimeout(t);t=setTimeout(function(){fn();if(navigator.vibrate)navigator.vibrate(30)},ms||1000)});
   ["pointerup","pointerleave","pointercancel"].forEach(function(n){el.addEventListener(n,function(){clearTimeout(t)})});
   el.addEventListener("contextmenu",function(e){e.preventDefault()});
 }
-hold($("water"),A.turb);hold($("flowBox"),A.wear);hold($("title"),A.hide);
+hold($("water"),A.turb);hold($("maint"),A.wear);hold($("title"),A.hide);hold($("live"),A.power,1500);
 
 /* ---------- the water ---------- */
 var cv=$("sea"),g=cv.getContext("2d"),W=0,H=0,dpr=1,phase=0;
@@ -120,13 +147,13 @@ var motes=[];for(var i=0;i<70;i++)motes.push({x:Math.random(),y:Math.random(),r:
 var CT=[10,98,130],CB=[3,30,54],MT=[118,94,50],MB=[36,26,12];
 function mix(a,b,t){return [0,1,2].map(function(i){return Math.round(lerp(a[i],b[i],t))})}
 function rgb(c){return "rgb("+c.join(",")+")"}
-function paint(level,fill,dt){
-  var bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,"#06202c");bg.addColorStop(1,"#020b12");g.fillStyle=bg;g.fillRect(0,0,W,H);
-  var wt=lerp(H*.92,-H*.06,fill),A1=H*.012,top=mix(CT,MT,level),bot=mix(CB,MB,level),tint=mix([190,240,255],[235,205,140],level);
+function paint(level,dt){
+  var A1=H*.012,top=mix(CT,MT,level),bot=mix(CB,MB,level),tint=mix([190,240,255],[235,205,140],level);
   var P=new Path2D();P.moveTo(0,H);
-  for(var x=0;x<=W;x+=10)P.lineTo(x,wt+A1*Math.sin(x/W*7+phase*2)+A1*.6*Math.sin(x/W*13-phase*3));
+  for(var x=0;x<=W;x+=10)P.lineTo(x,-H*.04+A1*Math.sin(x/W*7+phase*2)+A1*.6*Math.sin(x/W*13-phase*3));
   P.lineTo(W,H);P.closePath();
-  var gr=g.createLinearGradient(0,Math.max(0,wt),0,H);gr.addColorStop(0,rgb(top));gr.addColorStop(1,rgb(bot));
+  g.fillStyle="#020b12";g.fillRect(0,0,W,H);
+  var gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,rgb(top));gr.addColorStop(1,rgb(bot));
   g.fillStyle=gr;g.fill(P);
   g.save();g.clip(P);
   for(var i=0;i<4;i++){
@@ -150,39 +177,33 @@ function paint(level,fill,dt){
     g.beginPath();g.arc((m.x+.02*Math.sin(phase*.7+m.p))*W,m.y*H,m.r*dpr*(1+level),0,6.283);g.fill();
   }
   g.restore();
-  if(fill<1){g.strokeStyle="rgba(210,248,255,.5)";g.lineWidth=2*dpr;g.stroke(P)}
 }
 
 /* ---------- text on top ---------- */
-function fmt(s){s=Math.floor(s);return [Math.floor(s/3600),Math.floor(s%3600/60),s%60].map(function(n){return String(n).padStart(2,"0")}).join(":")}
 function dom(n){
-  var el=S?Math.max(0,(n-S.t0)/1000):0,up=!!S&&el>=START;
-  $("time").textContent=fmt(el);
-  $("sys").textContent=!S?"Connecting…":up?"":"Starting systems, "+Math.ceil(START-el)+" s";
-  var fl="—";
-  if(up){var lo=9,hi=0;for(var i=0;i<=10;i++){var v=flowAt(el-i*.5);lo=Math.min(lo,v);hi=Math.max(hi,v)}
-    var a=lo.toFixed(2),b=hi.toFixed(2);fl=(a===b?a:a+"–"+b)+" L/min"}
-  $("flow").textContent=fl;
-  $("verdict").textContent=up&&!S.hide.v?(lvl(n)>=.5?"Needs cleaning":"Clean"):"";
-  var w=up&&eff(n)<80;$("warn").hidden=!w;
-  if(w)$("warnSub").textContent="Efficiency "+Math.round(eff(n))+"%, limit 80%";
+  var on=S.on;
+  $("sys").textContent=on?"":"Taking readings…";
+  $("verdict").textContent=S.hide.v?"":(lvl(n)>=.5?"Needs cleaning":"Clean");
+  var w=eff(n)<80;$("warn").hidden=!w;
+  ["tank","mem"].forEach(function(k){
+    var L=life(k,n),due=L.pct>=REMIND_AT;
+    $("h-"+k).textContent=Math.floor(L.h);
+    $("bar-"+k).style.width=clamp(L.pct/100)*100+"%";
+    $("life-"+k).classList.toggle("due",due);
+    $("rem-"+k).hidden=!due;
+    if(due)$("rem-"+k).textContent=L.pct>=100?"Service overdue, book now":"Book servicing";
+  });
 }
 var last=0,domT=0;
 function frame(ts){
   var dt=Math.min(50,ts-last||16);last=ts;
-  var n=Date.now(),level=0,fill=0,fv=.18;
-  if(S){var el=(n-S.t0)/1000;level=lvl(n);fill=clamp(el/START);fv=flowAt(Math.max(0,el))}
-  if(!reduced)phase+=dt/1000*(.3+clamp((fv-.16)/.04)*.5);   // faster flow, faster water
-  paint(level,fill,dt);
+  var n=Date.now(),level=lvl(n);
+  if(!reduced)phase+=dt/1000*(S.on?.5:.3);   // the water moves a little faster while powered on
+  paint(level,dt);
   if(ts-domT>250){domT=ts;dom(n)}
   requestAnimationFrame(frame);
 }
-requestAnimationFrame(frame);
-
-/* ---------- start ---------- */
-connect();
-if(isLaptop)A.reset();                                  // a laptop load restarts everything
-else setTimeout(function(){if(!S)A.reset()},3500);      // a phone joins the running session
+dom(Date.now());requestAnimationFrame(frame);
 })();
 </script>
 </body>
